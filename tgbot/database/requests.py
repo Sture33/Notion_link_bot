@@ -1,4 +1,4 @@
-from tgbot.models.models import async_session, User, NotionToken, Page
+from tgbot.models.models import async_session, User, NotionToken, Page, Table, Category
 from sqlalchemy import select, delete
 
 
@@ -102,11 +102,15 @@ async def get_page_from_id(id):
     async with async_session() as session:
         page = await session.execute(select(Page.id, Page.page_api).where(Page.id == id))
         return page.all()
+
+
 async def get_page_token_from_id(id):
     async with async_session() as session:
         page_api = await session.scalar(select(Page.page_api).where(Page.id == id))
-        token = await session.scalar(select(NotionToken.token).where(NotionToken.id == await session.scalar(select(Page.token).where(Page.id == id))))
+        token = await session.scalar(select(NotionToken.token).where(
+            NotionToken.id == await session.scalar(select(Page.token).where(Page.id == id))))
         return token, page_api
+
 
 async def delete_page(id):
     async with async_session() as session:
@@ -117,3 +121,58 @@ async def delete_page(id):
             return True
         else:
             return False
+
+
+async def add_database_to_page(title, page_id, database_id):
+    async with async_session() as session:
+        session.add(Table(title=title, page_id=page_id, database_id=database_id))
+        await session.commit()
+
+
+async def get_pages_tables(page_id):
+    async with async_session() as session:
+        tables = await session.execute(select(Table.id, Table.database_id).where(Table.page_id == page_id))
+        return tables.all()
+
+
+async def get_pages_tables_id(page_id):
+    async with async_session() as session:
+        tables = await session.execute(select(Table.id).where(Table.page_id == page_id))
+        return tables.all()
+
+
+async def get_table(id):
+    async with async_session() as session:
+        table = await session.execute(select(Table.id, Table.database_id, Table.page_id).where(Table.id == id))
+        return table.all()
+
+
+async def delete_table(id):
+    async with async_session() as session:
+        istable = await session.execute(select(Table.id).where(Table.id == id))
+        if istable:
+            await session.execute(delete(Table).where(Table.id == id))
+            await session.commit()
+            return True
+        else:
+            return False
+
+
+async def add_category(database_id, title):
+    async with async_session() as session:
+        session.add(Category(database_id=database_id, title=title))
+        await session.commit()
+
+
+async def get_categories(database_id):
+    async with async_session() as session:
+        cats = await session.execute(select(Category.id, Category.title).where(Category.database_id == database_id))
+        return cats.all()
+
+
+async def get_token_from_database_id(id):
+    async with async_session() as session:
+        page_id = await session.execute(select(Table.page_id).where(Table.id == id))
+        token_id = await session.execute(select(Page.token).where(Page.id == page_id.all()[0][0]))
+        token = await session.execute(select(NotionToken.token).where(NotionToken.id == token_id.all()[0][0]))
+        return token.all()

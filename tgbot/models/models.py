@@ -36,9 +36,30 @@ class Page(Base):
     token: Mapped[int] = mapped_column(ForeignKey('notion_tokens.id'))
 
     notion_token: Mapped['NotionToken'] = relationship(back_populates='pages')
+    tables: Mapped['Table'] = relationship(back_populates='page', cascade='all, delete-orphan')
+
+
+class Table(Base):
+    __tablename__ = 'tables'
+
+    title: Mapped[str] = mapped_column(String(100))
+    database_id: Mapped[str] = mapped_column(String(100))
+    page_id: Mapped[int] = mapped_column(ForeignKey('pages.id'))
+
+    page: Mapped['Page'] = relationship(back_populates='tables')
+    categories: Mapped[list['Category']] = relationship(
+        'Category', back_populates='table', cascade='all, delete-orphan'
+    )
+
+
+class Category(Base):
+    __tablename__ = 'categories'
+    title: Mapped[str] = mapped_column(String(100))
+    database_id: Mapped[str] = mapped_column(ForeignKey('tables.id'))
+
+    table: Mapped['Table'] = relationship('Table', back_populates='categories')
 
 
 async def async_main():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-

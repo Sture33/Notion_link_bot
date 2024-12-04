@@ -12,6 +12,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from tgbot import handlers
 from tgbot.data import config
 from tgbot.models import models
+from tgbot.third_dir.third_funcs import send_message_to_channel
 
 
 def setup_logging():
@@ -65,6 +66,16 @@ async def main():
     dp.shutdown.register(aiogram_on_shutdown_polling)
 
     await models.async_main()
+
+    try:
+        await send_message_to_channel(
+            msg="Бот успешно запущен!",
+            bot=bot,
+            channel_id=config.TELEGRAM_CHANNEL_ID,
+        )
+    except Exception as e:
+        logging.error(f"Не удалось отправить уведомление: {e}")
+
     await dp.start_polling(bot)
 
 
