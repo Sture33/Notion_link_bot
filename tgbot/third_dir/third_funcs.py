@@ -53,9 +53,10 @@ async def send_message_to_channel(msg, bot, channel_id):
         logging.error(f"Ошибка при отправке сообщения: {e}")
 
 
-def get_source_from_url(url):
+async def get_source_from_url(url):
     parsed_url = urlparse(url)
     domain = parsed_url.netloc.lower()
+    print(domain)
 
     if 't.me' in domain or 'telegram.me' in domain:
         return "Telegram"
@@ -65,13 +66,13 @@ def get_source_from_url(url):
         return "Instagram"
     elif 'twitter.com' in domain:
         return "Twitter"
-    elif 'youtube.com' in domain:
+    elif 'youtube.com' in domain or 'youtu.be' in domain:
         return "YouTube"
     else:
         return "Unknown"
 
 
-def get_telegram_source(url):
+async def get_telegram_source(url):
     if 't.me' in url or 'telegram.me' in url:
         match = re.search(r't.me/([a-zA-Z0-9_]+)', url)
         if match:
@@ -79,11 +80,11 @@ def get_telegram_source(url):
     return "Unknown"
 
 
-def get_source(url):
-    source = get_source_from_url(url)
+async def get_source(url):
+    source = await get_source_from_url(url)
 
     if source == "Telegram":
-        telegram_source = get_telegram_source(url)
+        telegram_source = await get_telegram_source(url)
         return f"Telegram - {telegram_source}"
 
     return source
