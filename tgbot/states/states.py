@@ -10,10 +10,21 @@ class SetPage(StatesGroup):
     token = State()
     page = State()
 
-class SetData(StatesGroup):
-    page_api = State()
-    token = State()
+
+class SetTable(StatesGroup):
+    title = State()
+    page_id = State()
+
+
+class SetCategory(StatesGroup):
+    title = State()
+    database_id = State()
+
+
+class SetRecord(StatesGroup):
+    database_id = State()
     title = State()
     url = State()
     category = State()
+    source = State()
     priority = State()

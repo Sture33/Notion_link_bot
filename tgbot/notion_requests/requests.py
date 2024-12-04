@@ -13,6 +13,32 @@ async def is_valid_notion_token(token):
         return False
 
 
+async def create_table(page_id, token, title):
+    notion = AsyncClient(auth=token)
+    database_data = {
+        "parent": {"type": "page_id", "page_id": page_id},
+        "title": [{"type": "text", "text": {"content": f"{title}"}}],
+        "properties": {
+            "Title": {"title": {}},
+            "Url": {"url": {}},
+            "Category": {"rich_text": {}},
+            "Source": {"rich_text": {}},
+            "Priority": {
+                "select": {
+                    "options": [
+                        {"name": "Low", "color": "gray"},
+                        {"name": "Medium", "color": "yellow"},
+                        {"name": "High", "color": "red"}
+                    ]
+                }
+            }
+        },
+    }
+    database = await notion.databases.create(**database_data)
+    database_id = database["id"]
+    return database_id
+
+
 async def check_page_access(token, page_id):
     notion = AsyncClient(auth=token)
 
@@ -30,60 +56,17 @@ async def check_page_access(token, page_id):
         await notion.aclose()
 
 
-async def add_data(datas, page_api, token):
+async def add_record(token, database_id, title, url, category, priority, source):
     notion = AsyncClient(auth=token)
-
-    async def prepare_page_block(fields, page_id):
-        return {
-            "parent": {"page_id": page_id},
-            "children": [
-                {
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [
-                            {
-                                "type": "text",
-                                "text": {
-                                    "content": fields[0],
-                                    "link": {"url": fields[1]},
-                                },
-                            }
-                        ]
-                    },
-                },
-                {
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [
-                            {
-                                "type": "text",
-                                "text": {"content": f"    Category: {fields[2]}"},
-                            }
-                        ]
-                    },
-                },
-                {
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [
-                            {
-                                "type": "text",
-                                "text": {"content": f"    Priority: {fields[3]}"},
-                            }
-                        ]
-                    },
-                },
-            ],
-        }
-
-    data_to_save = await prepare_page_block(datas, page_api)
-    try:
-        response = await notion.blocks.children.append(block_id=page_api, children=data_to_save['children'])
-        return True
-    except Exception as e:
-
-        return False
-
+    page_data = {
+        "parent": {"database_id": database_id},
+        "properties": {
+            "Title": {"title": [{"type": "text", "text": {"content": title}}]},
+            "Url": {"url": url},
+            "Category": {"rich_text": [{"type": "text", "text": {"content": category}}]},
+            "Source": {"rich_text": [{"type": "text", "text": {"content": source}}]},
+            "Priority": {"select": {"name": priority}},
+        },
+    }
+    page = await notion.pages.create(**page_data)
+    return page
